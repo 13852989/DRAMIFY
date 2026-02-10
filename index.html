@@ -31,7 +31,7 @@ video{
   object-fit:contain;
 }
 
-/* overlay play */
+/* overlay play inicial */
 #overlay{
   position:absolute;
   inset:0;
@@ -47,10 +47,27 @@ video{
 
 #overlay.hidden{display:none}
 
-/* botones flotantes */
-.btn{
+/* columna de botones */
+#controls{
   position:absolute;
+  top:50%;
+  right:16px;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
   z-index:20;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s;
+}
+
+#controls.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.btn{
   width:56px;
   height:56px;
   border-radius:50%;
@@ -63,28 +80,22 @@ video{
   justify-content:center;
   backdrop-filter:blur(6px);
   cursor:pointer;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .25s,transform .15s;
 }
 
-.btn.show{
-  opacity:.9;
-  pointer-events:auto;
-}
-
-.btn:active{transform:scale(.94)}
-
-#fullscreenBtn{top:16px;right:16px}
-#closeBtn{top:16px;left:16px;font-size:24px}
+.btn.play{font-size:20px}
+.btn.rotate{font-size:24px}
+.btn.close{font-size:26px}
 </style>
 </head>
 
 <body>
 <div id="container">
 
-  <button id="closeBtn" class="btn">✕</button>
-  <button id="fullscreenBtn" class="btn">⤢</button>
+  <div id="controls">
+    <button class="btn close" id="closeBtn">✕</button>
+    <button class="btn play" id="playBtn">▶︎</button>
+    <button class="btn rotate" id="rotateBtn">⟳</button>
+  </div>
 
   <div id="overlay">▶︎ Tocar para reproducir</div>
 
@@ -101,10 +112,14 @@ video{
 <script>
 const video = document.getElementById('player');
 const overlay = document.getElementById('overlay');
-const fsBtn = document.getElementById('fullscreenBtn');
+const controls = document.getElementById('controls');
+
+const playBtn = document.getElementById('playBtn');
+const rotateBtn = document.getElementById('rotateBtn');
 const closeBtn = document.getElementById('closeBtn');
 
 let hideTimer;
+let lockedLandscape = false;
 
 /* ===== cargar video ===== */
 const params = new URLSearchParams(location.search);
@@ -120,44 +135,51 @@ if(!url){
   video.src = url;
 }
 
-/* ===== botones ===== */
-function showButtons(){
-  fsBtn.classList.add('show');
-  closeBtn.classList.add('show');
-
+/* ===== helpers ===== */
+function showControls(){
+  controls.classList.add('show');
   clearTimeout(hideTimer);
   hideTimer = setTimeout(()=>{
-    fsBtn.classList.remove('show');
-    closeBtn.classList.remove('show');
+    controls.classList.remove('show');
   },2000);
 }
 
 /* ===== play ===== */
-overlay.onclick = ()=>{
+function playVideo(){
   video.play()
     .then(()=>overlay.classList.add('hidden'))
     .catch(()=>overlay.textContent='❌ Error al reproducir');
-};
+}
+
+overlay.onclick = playVideo;
+playBtn.onclick = playVideo;
 
 video.onplay = ()=>{
   overlay.classList.add('hidden');
-  showButtons();
+  showControls();
 };
 
-/* ===== fullscreen REAL (no rotaciones falsas) ===== */
-fsBtn.onclick = ()=>{
-  if(!document.fullscreenElement){
-    video.requestFullscreen?.() ||
-    video.webkitRequestFullscreen?.();
-  }else{
-    document.exitFullscreen?.() ||
-    document.webkitExitFullscreen?.();
+/* ===== botón ORIENTACIÓN (no fullscreen) ===== */
+rotateBtn.onclick = async ()=>{
+  if(!screen.orientation?.lock) return;
+
+  try{
+    if(!lockedLandscape){
+      await screen.orientation.lock('landscape');
+      lockedLandscape = true;
+    }else{
+      await screen.orientation.unlock();
+      lockedLandscape = false;
+    }
+  }catch(e){
+    console.warn('Orientación no permitida');
   }
-  showButtons();
+  showControls();
 };
 
 /* ===== cerrar ===== */
 closeBtn.onclick = ()=>{
+  try{ screen.orientation.unlock(); }catch(e){}
   if(window.Capacitor?.Plugins?.App){
     window.Capacitor.Plugins.App.exitApp();
   }else{
@@ -165,9 +187,9 @@ closeBtn.onclick = ()=>{
   }
 };
 
-/* ===== interacción ===== */
+/* ===== mostrar controles al tocar ===== */
 ['touchstart','click'].forEach(evt=>{
-  document.addEventListener(evt, showButtons, { passive:true });
+  document.addEventListener(evt, showControls, { passive:true });
 });
 </script>
 </body>
