@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Dramify Player</title>
 
-  <!-- CSP PERMISIVA PARA VIDEO REMOTO -->
   <meta http-equiv="Content-Security-Policy"
     content="
       default-src 'self';
@@ -25,48 +24,121 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
-    #player {
+    body.landscape {
+      transform: rotate(90deg);
+      transform-origin: center;
+      width: 100vh;
+      height: 100vw;
+    }
+
+    #container {
+      position: relative;
       width: 100%;
       height: 100%;
       background: #000;
     }
 
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    /* Overlay play */
     #overlay {
       position: absolute;
       inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,.6);
+      background: rgba(0,0,0,.45);
       color: #fff;
-      font-size: 20px;
+      font-size: 22px;
       cursor: pointer;
       z-index: 10;
+      backdrop-filter: blur(2px);
     }
 
     #overlay.hidden {
       display: none;
     }
+
+    /* BOTONES MINIMAL */
+    .floating-btn {
+      position: absolute;
+      z-index: 20;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(20,20,20,.65);
+      color: #fff;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      transition: transform .15s ease, background .15s ease, opacity .3s;
+      opacity: .85;
+    }
+
+    .floating-btn:active {
+      transform: scale(.94);
+    }
+
+    .floating-btn:hover {
+      background: rgba(229,9,20,.85);
+      opacity: 1;
+    }
+
+    /* POSICIONES */
+    #rotateBtn {
+      top: 16px;
+      right: 16px;
+    }
+
+    #closeBtn {
+      top: 16px;
+      left: 16px;
+      font-size: 24px;
+    }
+
   </style>
 </head>
 <body>
 
-  <div id="overlay">▶️ Tocar para reproducir</div>
+<div id="container">
+  <!-- Botón cerrar (opcional para app) -->
+  <button id="closeBtn" class="floating-btn">✕</button>
 
+  <!-- Botón rotar -->
+  <button id="rotateBtn" class="floating-btn">⤾</button>
+
+  <!-- Overlay -->
+  <div id="overlay">▶︎ Tocar para reproducir</div>
+
+  <!-- Video -->
   <video
     id="player"
     controls
     playsinline
+    webkit-playsinline
     preload="metadata"
   ></video>
+</div>
 
-  <script>
+<script>
   const video = document.getElementById('player');
   const overlay = document.getElementById('overlay');
+  const rotateBtn = document.getElementById('rotateBtn');
+  const closeBtn = document.getElementById('closeBtn');
 
+  /* ========= VIDEO DESDE QUERY ========= */
   const params = new URLSearchParams(window.location.search);
   let videoUrl = params.get('video');
 
@@ -74,28 +146,45 @@
     overlay.textContent = '❌ No se recibió video';
     overlay.style.cursor = 'default';
   } else {
-    try {
-      // Blindaje total: soporta codificada y no codificada
-      videoUrl = decodeURIComponent(videoUrl);
-    } catch (e) {
-      console.warn('URL ya decodificada');
+    if (videoUrl.includes('%')) {
+      try { videoUrl = decodeURIComponent(videoUrl); } catch(e){}
     }
-
-    console.log('VIDEO FINAL:', videoUrl); // DEBUG CLAVE
+    console.log('VIDEO FINAL:', videoUrl);
     video.src = videoUrl;
   }
 
+  /* ========= PLAY MANUAL ========= */
   overlay.addEventListener('click', () => {
     video.play()
       .then(() => overlay.classList.add('hidden'))
-      .catch(err => {
-        overlay.textContent = '❌ Error al reproducir';
-        console.error(err);
-      });
+      .catch(() => overlay.textContent = '❌ Error al reproducir');
   });
 
   video.addEventListener('play', () => {
     overlay.classList.add('hidden');
+  });
+
+  /* ========= ROTACIÓN ========= */
+  let landscape = false;
+
+  rotateBtn.addEventListener('click', () => {
+    landscape = !landscape;
+    document.body.classList.toggle('landscape', landscape);
+
+    if (window.Capacitor?.Plugins?.ScreenOrientation) {
+      window.Capacitor.Plugins.ScreenOrientation.lock({
+        orientation: landscape ? 'landscape' : 'portrait'
+      });
+    }
+  });
+
+  /* ========= CERRAR (APP) ========= */
+  closeBtn.addEventListener('click', () => {
+    if (window.Capacitor?.Plugins?.App) {
+      window.Capacitor.Plugins.App.exitApp();
+    } else {
+      history.back();
+    }
   });
 </script>
 
