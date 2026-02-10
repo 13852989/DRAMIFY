@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <title>Dramify Player</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
@@ -27,11 +26,11 @@ html,body{
 video{
   width:100%;
   height:100%;
-  background:#000;
   object-fit:contain;
+  background:#000;
 }
 
-/* overlay play inicial */
+/* overlay inicial */
 #overlay{
   position:absolute;
   inset:0;
@@ -44,24 +43,18 @@ video{
   z-index:10;
   cursor:pointer;
 }
-
 #overlay.hidden{display:none}
 
-/* columna de botones */
+/* ===== CONTROLES ===== */
 #controls{
   position:absolute;
-  top:50%;
-  right:16px;
-  transform:translateY(-50%);
-  display:flex;
-  flex-direction:column;
-  gap:14px;
   z-index:20;
+  display:flex;
+  gap:14px;
   opacity:0;
   pointer-events:none;
   transition:opacity .25s;
 }
-
 #controls.show{
   opacity:1;
   pointer-events:auto;
@@ -82,9 +75,25 @@ video{
   cursor:pointer;
 }
 
-.btn.play{font-size:20px}
-.btn.rotate{font-size:24px}
-.btn.close{font-size:26px}
+/* ===== VERTICAL (DEFAULT) ===== */
+@media (orientation: portrait){
+  #controls{
+    top:50%;
+    right:16px;
+    transform:translateY(-50%);
+    flex-direction:column;
+  }
+}
+
+/* ===== HORIZONTAL ===== */
+@media (orientation: landscape){
+  #controls{
+    bottom:16px;
+    right:50%;
+    transform:translateX(50%);
+    flex-direction:row;
+  }
+}
 </style>
 </head>
 
@@ -92,9 +101,9 @@ video{
 <div id="container">
 
   <div id="controls">
-    <button class="btn close" id="closeBtn">✕</button>
-    <button class="btn play" id="playBtn">▶︎</button>
-    <button class="btn rotate" id="rotateBtn">⟳</button>
+    <button class="btn" id="closeBtn">✕</button>
+    <button class="btn" id="playBtn">▶︎</button>
+    <button class="btn" id="rotateBtn">⟳</button>
   </div>
 
   <div id="overlay">▶︎ Tocar para reproducir</div>
@@ -119,23 +128,20 @@ const rotateBtn = document.getElementById('rotateBtn');
 const closeBtn = document.getElementById('closeBtn');
 
 let hideTimer;
-let lockedLandscape = false;
+let locked = false;
 
-/* ===== cargar video ===== */
+/* cargar video */
 const params = new URLSearchParams(location.search);
 let url = params.get('video');
 
-if(!url){
-  overlay.textContent = '❌ No se recibió video';
-  overlay.style.cursor = 'default';
-}else{
-  if(url.includes('%')){
-    try{ url = decodeURIComponent(url); }catch(e){}
-  }
+if(url){
+  try{ url = decodeURIComponent(url); }catch(e){}
   video.src = url;
+}else{
+  overlay.textContent = '❌ No se recibió video';
 }
 
-/* ===== helpers ===== */
+/* helpers */
 function showControls(){
   controls.classList.add('show');
   clearTimeout(hideTimer);
@@ -144,40 +150,36 @@ function showControls(){
   },2000);
 }
 
-/* ===== play ===== */
-function playVideo(){
+/* play */
+function play(){
   video.play()
     .then(()=>overlay.classList.add('hidden'))
-    .catch(()=>overlay.textContent='❌ Error al reproducir');
+    .catch(()=>overlay.textContent='❌ Error');
 }
-
-overlay.onclick = playVideo;
-playBtn.onclick = playVideo;
+overlay.onclick = play;
+playBtn.onclick = play;
 
 video.onplay = ()=>{
   overlay.classList.add('hidden');
   showControls();
 };
 
-/* ===== botón ORIENTACIÓN (no fullscreen) ===== */
+/* orientación MANUAL */
 rotateBtn.onclick = async ()=>{
   if(!screen.orientation?.lock) return;
-
   try{
-    if(!lockedLandscape){
+    if(!locked){
       await screen.orientation.lock('landscape');
-      lockedLandscape = true;
+      locked = true;
     }else{
       await screen.orientation.unlock();
-      lockedLandscape = false;
+      locked = false;
     }
-  }catch(e){
-    console.warn('Orientación no permitida');
-  }
+  }catch(e){}
   showControls();
 };
 
-/* ===== cerrar ===== */
+/* cerrar */
 closeBtn.onclick = ()=>{
   try{ screen.orientation.unlock(); }catch(e){}
   if(window.Capacitor?.Plugins?.App){
@@ -187,7 +189,7 @@ closeBtn.onclick = ()=>{
   }
 };
 
-/* ===== mostrar controles al tocar ===== */
+/* mostrar controles */
 ['touchstart','click'].forEach(evt=>{
   document.addEventListener(evt, showControls, { passive:true });
 });
