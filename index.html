@@ -1,267 +1,98 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy"
-content="
-default-src 'self';
-script-src 'self' 'unsafe-inline';
-style-src 'self' 'unsafe-inline';
-img-src 'self' data:;
-media-src https://pub-d0b08423eb5844a6ae665cc75c7bb2de.r2.dev;
-connect-src 'self' https://pub-d0b08423eb5844a6ae665cc75c7bb2de.r2.dev;
-">
-    <title>Reproductor Netflix</title>
+  <meta charset="UTF-8" />
+  <title>Dramify Player</title>
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <!-- CSP PERMISIVA PARA VIDEO REMOTO -->
+  <meta http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data:;
+      media-src https: blob:;
+      connect-src https:;
+    ">
 
-        body {
-            background: #000;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            touch-action: none;
-        }
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-        .player {
-            width: 100%;
-            max-width: 360px;
-            height: 640px;
-            background: #000;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(229, 9, 20, 0.3);
-        }
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
 
-        .player::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(229,9,20,.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(0,0,0,.8) 0%, transparent 50%),
-                linear-gradient(45deg, #141414 0%, #000 100%);
-            z-index: 1;
-        }
+    #player {
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
 
-        .video-container {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            background: #000;
-            cursor: pointer;
-            display: none;
-        }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.6);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 10;
+    }
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: 0;
-            inset-inline: 0;
-            padding: 20px;
-            background: linear-gradient(to top, rgba(0,0,0,.9), transparent);
-            z-index: 3;
-            opacity: 0;
-            transition: opacity .3s;
-            pointer-events: none;
-        }
-
-        .controls.show {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .progress-container {
-            height: 3px;
-            background: rgba(255,255,255,.2);
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        .progress {
-            height: 100%;
-            background: #e50914;
-            width: 0%;
-        }
-
-        .main-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-        }
-
-        .play-btn {
-            background: #e50914;
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .time {
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            margin-top: 5px;
-        }
-
-        .initial-state {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .loading {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,.1);
-            border-top-color: #e50914;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+    #overlay.hidden {
+      display: none;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="player" id="player">
+  <div id="overlay">▶️ Tocar para reproducir</div>
 
-    <div class="initial-state" id="initialState">
-        <i class="fas fa-play-circle" style="font-size:60px;color:#e50914"></i>
-        <p>Reproductor listo<br><small>Toca para reproducir</small></p>
-    </div>
+  <video
+    id="player"
+    controls
+    playsinline
+    preload="metadata"
+  ></video>
 
-    <div class="video-container" id="videoContainer">
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-        </div>
+  <script>
+    const video = document.getElementById('player');
+    const overlay = document.getElementById('overlay');
 
-        <video id="video" playsinline></video>
+    // Obtener ?video=
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('video');
 
-        <div class="controls" id="controls">
-            <div class="progress-container" id="progressBar">
-                <div class="progress" id="progress"></div>
-            </div>
+    if (!videoUrl) {
+      overlay.textContent = '❌ No se recibió video';
+      overlay.style.cursor = 'default';
+    } else {
+      video.src = decodeURIComponent(videoUrl);
+    }
 
-            <div class="main-controls">
-                <button class="btn play-btn" id="playBtn">
-                    <i class="fas fa-play" id="playIcon"></i>
-                </button>
-                <button class="btn" id="muteBtn">
-                    <i class="fas fa-volume-up" id="muteIcon"></i>
-                </button>
-            </div>
+    // Reproducción por gesto (OBLIGATORIO en móvil)
+    overlay.addEventListener('click', () => {
+      video.play()
+        .then(() => overlay.classList.add('hidden'))
+        .catch(err => {
+          overlay.textContent = '❌ No se pudo reproducir';
+          console.error(err);
+        });
+    });
 
-            <div class="time">
-                <span id="currentTime">0:00</span>
-                <span id="duration">0:00</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-
-<script>
-const video = document.getElementById('video');
-const videoContainer = document.getElementById('videoContainer');
-const initialState = document.getElementById('initialState');
-const loading = document.getElementById('loading');
-const playBtn = document.getElementById('playBtn');
-const playIcon = document.getElementById('playIcon');
-const muteBtn = document.getElementById('muteBtn');
-const muteIcon = document.getElementById('muteIcon');
-const progress = document.getElementById('progress');
-const progressBar = document.getElementById('progressBar');
-const currentTimeEl = document.getElementById('currentTime');
-const durationEl = document.getElementById('duration');
-
-const params = new URLSearchParams(window.location.search);
-const videoUrl = params.get('video');
-
-if (!videoUrl) {
-    initialState.innerHTML = '<p style="color:#fff">❌ Video no encontrado</p>';
-} else {
-    videoContainer.style.display = 'block';
-    initialState.style.display = 'none';
-    loading.style.display = 'flex';
-    video.src = videoUrl;
-    video.load();
-}
-
-video.addEventListener('loadeddata', () => {
-    loading.style.display = 'none';
-    durationEl.textContent = formatTime(video.duration);
-});
-
-video.addEventListener('timeupdate', () => {
-    progress.style.width = (video.currentTime / video.duration) * 100 + '%';
-    currentTimeEl.textContent = formatTime(video.currentTime);
-});
-
-video.addEventListener('play', () => playIcon.className = 'fas fa-pause');
-video.addEventListener('pause', () => playIcon.className = 'fas fa-play');
-
-playBtn.onclick = () => video.paused ? video.play() : video.pause();
-muteBtn.onclick = () => {
-    video.muted = !video.muted;
-    muteIcon.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-};
-
-progressBar.onclick = e => {
-    const r = progressBar.getBoundingClientRect();
-    video.currentTime = ((e.clientX - r.left) / r.width) * video.duration;
-};
-
-function formatTime(s) {
-    if (isNaN(s)) return '0:00';
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec < 10 ? '0' : ''}${sec}`;
-}
-</script>
+    // Ocultar overlay si el usuario da play desde controles
+    video.addEventListener('play', () => {
+      overlay.classList.add('hidden');
+    });
+  </script>
 
 </body>
 </html>
