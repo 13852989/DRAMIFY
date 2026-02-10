@@ -64,35 +64,40 @@
   ></video>
 
   <script>
-    const video = document.getElementById('player');
-    const overlay = document.getElementById('overlay');
+  const video = document.getElementById('player');
+  const overlay = document.getElementById('overlay');
 
-    // Obtener ?video=
-    const params = new URLSearchParams(window.location.search);
-    const videoUrl = params.get('video');
+  const params = new URLSearchParams(window.location.search);
+  let videoUrl = params.get('video');
 
-    if (!videoUrl) {
-      overlay.textContent = '❌ No se recibió video';
-      overlay.style.cursor = 'default';
-    } else {
-      video.src = decodeURIComponent(videoUrl);
+  if (!videoUrl) {
+    overlay.textContent = '❌ No se recibió video';
+    overlay.style.cursor = 'default';
+  } else {
+    try {
+      // Blindaje total: soporta codificada y no codificada
+      videoUrl = decodeURIComponent(videoUrl);
+    } catch (e) {
+      console.warn('URL ya decodificada');
     }
 
-    // Reproducción por gesto (OBLIGATORIO en móvil)
-    overlay.addEventListener('click', () => {
-      video.play()
-        .then(() => overlay.classList.add('hidden'))
-        .catch(err => {
-          overlay.textContent = '❌ No se pudo reproducir';
-          console.error(err);
-        });
-    });
+    console.log('VIDEO FINAL:', videoUrl); // DEBUG CLAVE
+    video.src = videoUrl;
+  }
 
-    // Ocultar overlay si el usuario da play desde controles
-    video.addEventListener('play', () => {
-      overlay.classList.add('hidden');
-    });
-  </script>
+  overlay.addEventListener('click', () => {
+    video.play()
+      .then(() => overlay.classList.add('hidden'))
+      .catch(err => {
+        overlay.textContent = '❌ Error al reproducir';
+        console.error(err);
+      });
+  });
+
+  video.addEventListener('play', () => {
+    overlay.classList.add('hidden');
+  });
+</script>
 
 </body>
 </html>
