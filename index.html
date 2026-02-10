@@ -20,14 +20,11 @@ html,body{
   position:relative;
   width:100%;
   height:100%;
-
-  /* FONDO PERMANENTE DEL REPRODUCTOR */
   background:
     radial-gradient(circle at center, rgba(255,255,255,0.06), rgba(0,0,0,0.95)),
-    url("https://i.postimg.cc/RZC2fvwb/logo_dramify.png")
+    url("https://i.postimg.cc/RZC2fvwb/logo-dramify.png")
       center center no-repeat;
-
-  background-size: min(60vw, 60vh);
+  background-size:min(60vw,60vh);
 }
 
 /* VIDEO */
@@ -37,6 +34,7 @@ video{
   object-fit:contain;
   background:#000;
   transition:transform .35s ease;
+  z-index:1;
 }
 
 /* rotación visual */
@@ -54,7 +52,7 @@ video.rotated{
   background:rgba(0,0,0,.45);
   color:#fff;
   font-size:20px;
-  z-index:10;
+  z-index:5;
   cursor:pointer;
 }
 #overlay.hidden{
@@ -62,22 +60,34 @@ video.rotated{
   pointer-events:none;
 }
 
-/* CONTROLES CUSTOM */
-
+/* CONTROLES */
+#controls{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  display:flex;
+  gap:28px;              /* 🔑 separación real */
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s;
+  z-index:20;
+}
 
 #controls.show{
   opacity:1;
+  pointer-events:auto;
 }
 
 /* botones */
 .btn{
-  width:60px;
-  height:60px;
+  width:64px;
+  height:64px;
   border-radius:50%;
   border:none;
   background:rgba(20,20,20,.75);
   color:#fff;
-  font-size:22px;
+  font-size:26px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -166,19 +176,13 @@ rotateBtn.onclick = ()=>{
   showControls();
 };
 
-/* CERRAR — UNIVERSAL */
+/* cerrar */
 closeBtn.onclick = ()=>{
-  // iframe / app
-  window.parent?.postMessage(
-    { type: 'DRAMIFY_CLOSE' },
-    '*'
-  );
-
-  // fallback navegador
+  window.parent?.postMessage({ type:'DRAMIFY_CLOSE' },'*');
   setTimeout(()=>history.back(),100);
 };
 
-/* detectar interacción */
+/* interacción */
 ['click','touchstart'].forEach(e=>{
   video.addEventListener(e, showControls);
 });
