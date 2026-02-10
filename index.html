@@ -23,11 +23,18 @@ html,body{
   background:#000;
 }
 
+/* ===== VIDEO ===== */
 video{
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
+  transition:transform .35s ease;
+}
+
+/* rotado visual */
+video.rotated{
+  transform:rotate(90deg) scale(1.15);
 }
 
 /* overlay */
@@ -56,7 +63,7 @@ video{
   gap:18px;
   opacity:0;
   pointer-events:none;
-  transition:opacity .25s ease;
+  transition:opacity .25s;
 }
 
 #controls.show{
@@ -70,7 +77,7 @@ video{
   height:64px;
   border-radius:50%;
   border:none;
-  background:rgba(20,20,20,.65);
+  background:rgba(20,20,20,.7);
   color:#fff;
   font-size:24px;
   display:flex;
@@ -78,33 +85,27 @@ video{
   justify-content:center;
   backdrop-filter:blur(8px);
   cursor:pointer;
-  transition:transform .15s ease;
-}
-.btn:active{
-  transform:scale(.92);
 }
 
-/* ===== ADAPTACIÓN POR ORIENTACIÓN ===== */
-body.portrait #controls{
-  flex-direction:column;
+@media (orientation:portrait){
+  #controls{ flex-direction:column; }
 }
-
-body.landscape #controls{
-  flex-direction:row;
+@media (orientation:landscape){
+  #controls{ flex-direction:row; }
 }
 </style>
 </head>
 
-<body class="portrait">
+<body>
 <div id="container">
 
   <div id="controls">
     <button class="btn" id="closeBtn">✕</button>
-    <button class="btn" id="playBtn">▶︎</button>
+    <button class="btn" id="playBtn">▶</button>
     <button class="btn" id="rotateBtn">⟳</button>
   </div>
 
-  <div id="overlay">▶︎ Tocar para reproducir</div>
+  <div id="overlay">▶ Tocar para reproducir</div>
 
   <video
     id="player"
@@ -120,28 +121,15 @@ body.landscape #controls{
 const video = document.getElementById('player');
 const overlay = document.getElementById('overlay');
 const controls = document.getElementById('controls');
+
 const playBtn = document.getElementById('playBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const closeBtn = document.getElementById('closeBtn');
 
 let hideTimer;
-let locked = false;
+let rotated = false;
 
-/* ===== ORIENTACIÓN REAL ===== */
-function updateOrientation(){
-  if(window.matchMedia('(orientation: portrait)').matches){
-    document.body.classList.add('portrait');
-    document.body.classList.remove('landscape');
-  }else{
-    document.body.classList.add('landscape');
-    document.body.classList.remove('portrait');
-  }
-}
-updateOrientation();
-window.addEventListener('orientationchange', updateOrientation);
-window.addEventListener('resize', updateOrientation);
-
-/* ===== CARGAR VIDEO ===== */
+/* cargar video */
 const params = new URLSearchParams(location.search);
 let url = params.get('video');
 if(url){
@@ -151,13 +139,11 @@ if(url){
   overlay.textContent = '❌ No se recibió video';
 }
 
-/* ===== CONTROLES ===== */
+/* controles */
 function showControls(){
   controls.classList.add('show');
   clearTimeout(hideTimer);
-  hideTimer = setTimeout(()=>{
-    controls.classList.remove('show');
-  },2000);
+  hideTimer = setTimeout(()=>controls.classList.remove('show'),2000);
 }
 
 /* play */
@@ -168,36 +154,29 @@ function play(){
 }
 overlay.onclick = play;
 playBtn.onclick = play;
-video.onplay = ()=>showControls();
+video.onplay = showControls;
 
-/* rotar pantalla */
-rotateBtn.onclick = async ()=>{
-  if(!screen.orientation?.lock) return;
-  try{
-    if(!locked){
-      await screen.orientation.lock('landscape');
-      locked = true;
-    }else{
-      await screen.orientation.unlock();
-      locked = false;
-    }
-  }catch(e){}
+/* ===== ROTAR (FUNCIONA EN TODOS LADOS) ===== */
+rotateBtn.onclick = ()=>{
+  rotated = !rotated;
+  video.classList.toggle('rotated', rotated);
   showControls();
 };
 
-/* cerrar */
+/* ===== CERRAR (REAL) ===== */
 closeBtn.onclick = ()=>{
-  try{ screen.orientation.unlock(); }catch(e){}
-  if(window.Capacitor?.Plugins?.App){
-    window.Capacitor.Plugins.App.exitApp();
-  }else{
+  // app / iframe
+  window.parent?.postMessage({ type:'DRAMIFY_CLOSE' }, '*');
+
+  // navegador
+  setTimeout(()=>{
     history.back();
-  }
+  },100);
 };
 
-/* mostrar controles al tocar */
-['touchstart','click'].forEach(evt=>{
-  document.addEventListener(evt, showControls, { passive:true });
+/* mostrar controles */
+['touchstart','click'].forEach(e=>{
+  document.addEventListener(e, showControls, { passive:true });
 });
 </script>
 </body>
