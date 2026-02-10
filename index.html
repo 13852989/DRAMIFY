@@ -23,6 +23,7 @@ html,body{
   background:#000;
 }
 
+/* VIDEO */
 video{
   width:100%;
   height:100%;
@@ -31,11 +32,12 @@ video{
   transition:transform .35s ease;
 }
 
+/* rotación visual */
 video.rotated{
   transform:rotate(90deg) scale(1.15);
 }
 
-/* overlay play */
+/* OVERLAY inicial */
 #overlay{
   position:absolute;
   inset:0;
@@ -44,7 +46,7 @@ video.rotated{
   justify-content:center;
   background:rgba(0,0,0,.45);
   color:#fff;
-  font-size:22px;
+  font-size:20px;
   z-index:10;
   cursor:pointer;
 }
@@ -53,7 +55,7 @@ video.rotated{
   pointer-events:none;
 }
 
-/* ===== CONTROLES ===== */
+/* CONTROLES CUSTOM */
 #controls{
   position:absolute;
   top:50%;
@@ -66,33 +68,27 @@ video.rotated{
   transition:opacity .25s;
 }
 
-/* visibles */
 #controls.show{
   opacity:1;
 }
 
 /* botones */
 .btn{
-  width:64px;
-  height:64px;
+  width:60px;
+  height:60px;
   border-radius:50%;
   border:none;
   background:rgba(20,20,20,.75);
   color:#fff;
-  font-size:24px;
+  font-size:22px;
   display:flex;
   align-items:center;
   justify-content:center;
   backdrop-filter:blur(8px);
   cursor:pointer;
-  user-select:none;
 }
 
-.btn:active{
-  transform:scale(.92);
-}
-
-/* orientación */
+/* orientación de botones */
 @media (orientation:portrait){
   #controls{ flex-direction:column; }
 }
@@ -105,14 +101,16 @@ video.rotated{
 <body>
 <div id="container">
 
+  <!-- CONTROLES -->
   <div id="controls">
     <button class="btn" id="closeBtn">✕</button>
-    <button class="btn" id="playBtn">▶</button>
     <button class="btn" id="rotateBtn">⟳</button>
   </div>
 
+  <!-- OVERLAY -->
   <div id="overlay">▶ Tocar para reproducir</div>
 
+  <!-- VIDEO -->
   <video
     id="video"
     controls
@@ -127,8 +125,6 @@ video.rotated{
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const controls = document.getElementById('controls');
-
-const playBtn = document.getElementById('playBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const closeBtn = document.getElementById('closeBtn');
 
@@ -145,7 +141,7 @@ if(url){
   overlay.textContent = '❌ No se recibió video';
 }
 
-/* ===== CONTROLES ===== */
+/* mostrar controles */
 function showControls(){
   controls.classList.add('show');
   clearTimeout(hideTimer);
@@ -154,20 +150,17 @@ function showControls(){
   },2000);
 }
 
-/* play */
-function play(){
+/* overlay → play */
+overlay.onclick = ()=>{
   video.play()
-    .then(()=>{
-      overlay.classList.add('hidden');
-      showControls();
-    })
-    .catch(()=>{
-      overlay.textContent = '❌ Error al reproducir';
-    });
-}
+    .then(()=>overlay.classList.add('hidden'))
+    .catch(()=>overlay.textContent='❌ Error');
+};
 
-overlay.onclick = play;
-playBtn.onclick = play;
+video.addEventListener('play', ()=>{
+  overlay.classList.add('hidden');
+  showControls();
+});
 
 /* rotar visual */
 rotateBtn.onclick = ()=>{
@@ -176,17 +169,23 @@ rotateBtn.onclick = ()=>{
   showControls();
 };
 
-/* cerrar */
+/* CERRAR — UNIVERSAL */
 closeBtn.onclick = ()=>{
   // iframe / app
-  window.parent?.postMessage({ type:'DRAMIFY_CLOSE' }, '*');
-  // navegador
+  window.parent?.postMessage(
+    { type: 'DRAMIFY_CLOSE' },
+    '*'
+  );
+
+  // fallback navegador
   setTimeout(()=>history.back(),100);
 };
 
-/* mostrar controles al tocar */
-video.addEventListener('click', showControls);
-document.addEventListener('touchstart', showControls, { passive:true });
+/* detectar interacción */
+['click','touchstart'].forEach(e=>{
+  video.addEventListener(e, showControls);
+});
 </script>
+
 </body>
 </html>
