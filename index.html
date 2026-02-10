@@ -4,16 +4,6 @@
 <meta charset="UTF-8" />
 <title>Dramify Player</title>
 
-<meta http-equiv="Content-Security-Policy"
-  content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' data:;
-    media-src https: blob:;
-    connect-src https:;
-  ">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
@@ -27,7 +17,7 @@ html,body{
   font-family:system-ui,-apple-system,sans-serif;
 }
 
-/* landscape visual (web fallback) */
+/* landscape solo cuando el usuario lo pide */
 body.landscape{
   transform:rotate(90deg);
   transform-origin:center;
@@ -48,7 +38,7 @@ video{
   background:#000;
 }
 
-/* overlay */
+/* overlay play */
 #overlay{
   position:absolute;
   inset:0;
@@ -64,7 +54,7 @@ video{
 
 #overlay.hidden{display:none}
 
-/* buttons */
+/* botones */
 .btn{
   position:absolute;
   z-index:20;
@@ -81,10 +71,15 @@ video{
   backdrop-filter:blur(6px);
   cursor:pointer;
   opacity:0;
+  pointer-events:none;
   transition:opacity .3s,transform .15s;
 }
 
-.btn.show{opacity:.9}
+.btn.show{
+  opacity:.9;
+  pointer-events:auto;
+}
+
 .btn:active{transform:scale(.94)}
 
 #rotateBtn{top:16px;right:16px}
@@ -116,65 +111,65 @@ const overlay = document.getElementById('overlay');
 const rotateBtn = document.getElementById('rotateBtn');
 const closeBtn = document.getElementById('closeBtn');
 
-let landscape=false;
+let landscape = false;
 let hideTimer;
 
 /* ========= cargar video ========= */
-const params=new URLSearchParams(location.search);
-let url=params.get('video');
+const params = new URLSearchParams(location.search);
+let url = params.get('video');
 
 if(!url){
-  overlay.textContent='❌ No se recibió video';
-  overlay.style.cursor='default';
+  overlay.textContent = '❌ No se recibió video';
+  overlay.style.cursor = 'default';
 }else{
   if(url.includes('%')){
-    try{url=decodeURIComponent(url)}catch(e){}
+    try{ url = decodeURIComponent(url); }catch(e){}
   }
-  video.src=url;
+  video.src = url;
 }
 
-/* ========= helpers ========= */
+/* ========= botones ========= */
 function showButtons(){
   rotateBtn.classList.add('show');
   closeBtn.classList.add('show');
+
   clearTimeout(hideTimer);
-  hideTimer=setTimeout(()=>{
+  hideTimer = setTimeout(()=>{
     rotateBtn.classList.remove('show');
     closeBtn.classList.remove('show');
   },2000);
 }
 
+/* ========= orientación (solo manual) ========= */
 function lockOrientation(type){
   if(window.Capacitor?.Plugins?.ScreenOrientation){
-    window.Capacitor.Plugins.ScreenOrientation.lock({orientation:type});
+    window.Capacitor.Plugins.ScreenOrientation.lock({ orientation:type });
   }
 }
 
 /* ========= play ========= */
-overlay.onclick=()=>{
+overlay.onclick = ()=>{
   video.play()
     .then(()=>overlay.classList.add('hidden'))
     .catch(()=>overlay.textContent='❌ Error al reproducir');
 };
 
-video.onplay=()=>{
+/* NO rotamos automáticamente */
+video.onplay = ()=>{
   overlay.classList.add('hidden');
-  landscape=true;
-  document.body.classList.add('landscape');
-  lockOrientation('landscape');
   showButtons();
 };
 
-/* ========= rotate ========= */
-rotateBtn.onclick=()=>{
-  landscape=!landscape;
-  document.body.classList.toggle('landscape',landscape);
-  lockOrientation(landscape?'landscape':'portrait');
+/* ========= rotar ========= */
+rotateBtn.onclick = ()=>{
+  landscape = !landscape;
+  document.body.classList.toggle('landscape', landscape);
+  lockOrientation(landscape ? 'landscape' : 'portrait');
   showButtons();
 };
 
-/* ========= close ========= */
-closeBtn.onclick=()=>{
+/* ========= cerrar ========= */
+closeBtn.onclick = ()=>{
   if(window.Capacitor?.Plugins?.App){
     window.Capacitor.Plugins.App.exitApp();
   }else{
@@ -182,9 +177,9 @@ closeBtn.onclick=()=>{
   }
 };
 
-/* ========= activity ========= */
-['mousemove','touchstart','click'].forEach(e=>{
-  document.addEventListener(e,showButtons,{passive:true});
+/* ========= interacción ========= */
+['touchstart','click'].forEach(evt=>{
+  document.addEventListener(evt, showButtons, { passive:true });
 });
 </script>
 </body>
