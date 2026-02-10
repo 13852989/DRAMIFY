@@ -18,8 +18,10 @@ html,body{
 
 /* CONTENEDOR */
 #container{
-  position:fixed;
-  inset:0;
+  position:relative; /* ← NO fixed */
+  width:100%;
+  height:100%;
+  overflow:hidden;
   background:
     radial-gradient(circle at center, rgba(255,255,255,.06), rgba(0,0,0,.95)),
     url("https://i.postimg.cc/RZC2fvwb/logo-dramify.png")
@@ -63,16 +65,15 @@ video.rotated{
 
 /* ===== CONTROLES FLOTANTES ===== */
 #controls{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
+  position:absolute;        /* ← clave */
+  inset:0;                  /* ocupa el iframe */
   display:flex;
+  align-items:center;
+  justify-content:center;
   gap:32px;
   opacity:0;
   pointer-events:none;
-  transition:opacity .25s ease;
-  z-index:5;
+  z-index:10;
 }
 
 #controls.show{
