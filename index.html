@@ -16,24 +16,25 @@ html,body{
   font-family:system-ui,-apple-system,sans-serif;
 }
 
+/* CONTENEDOR */
 #container{
-  position:relative;
-  width:100%;
-  height:100%;
+  position:fixed;
+  inset:0;
   background:
-    radial-gradient(circle at center, rgba(255,255,255,0.06), rgba(0,0,0,0.95)),
+    radial-gradient(circle at center, rgba(255,255,255,.06), rgba(0,0,0,.95)),
     url("https://i.postimg.cc/RZC2fvwb/logo-dramify.png")
       center center no-repeat;
-  background-size:min(60vw,60vh);
+  background-size:min(55vw,55vh);
 }
 
 /* VIDEO */
 video{
+  position:absolute;
+  inset:0;
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
-  transition:transform .35s ease;
   z-index:1;
 }
 
@@ -42,7 +43,7 @@ video.rotated{
   transform:rotate(90deg) scale(1.15);
 }
 
-/* OVERLAY inicial */
+/* OVERLAY */
 #overlay{
   position:absolute;
   inset:0;
@@ -52,7 +53,7 @@ video.rotated{
   background:rgba(0,0,0,.45);
   color:#fff;
   font-size:20px;
-  z-index:5;
+  z-index:3;
   cursor:pointer;
 }
 #overlay.hidden{
@@ -60,18 +61,18 @@ video.rotated{
   pointer-events:none;
 }
 
-/* CONTROLES */
+/* ===== CONTROLES FLOTANTES ===== */
 #controls{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
   display:flex;
-  gap:28px;              /* 🔑 separación real */
+  gap:32px;
   opacity:0;
   pointer-events:none;
-  transition:opacity .25s;
-  z-index:20;
+  transition:opacity .25s ease;
+  z-index:5;
 }
 
 #controls.show{
@@ -79,7 +80,7 @@ video.rotated{
   pointer-events:auto;
 }
 
-/* botones */
+/* BOTONES */
 .btn{
   width:64px;
   height:64px;
@@ -91,11 +92,11 @@ video.rotated{
   display:flex;
   align-items:center;
   justify-content:center;
-  backdrop-filter:blur(8px);
+  backdrop-filter:blur(10px);
   cursor:pointer;
 }
 
-/* orientación de botones */
+/* ORIENTACIÓN DE BOTONES */
 @media (orientation:portrait){
   #controls{ flex-direction:column; }
 }
@@ -157,7 +158,7 @@ function showControls(){
   },2000);
 }
 
-/* overlay → play */
+/* play */
 overlay.onclick = ()=>{
   video.play()
     .then(()=>overlay.classList.add('hidden'))
@@ -169,7 +170,7 @@ video.addEventListener('play', ()=>{
   showControls();
 });
 
-/* rotar visual */
+/* rotar */
 rotateBtn.onclick = ()=>{
   rotated = !rotated;
   video.classList.toggle('rotated', rotated);
