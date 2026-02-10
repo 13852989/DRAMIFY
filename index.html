@@ -48,21 +48,25 @@ video{
 /* ===== CONTROLES ===== */
 #controls{
   position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
   z-index:20;
   display:flex;
-  gap:14px;
+  gap:18px;
   opacity:0;
   pointer-events:none;
   transition:opacity .25s;
 }
+
 #controls.show{
   opacity:1;
   pointer-events:auto;
 }
 
 .btn{
-  width:56px;
-  height:56px;
+  width:60px;
+  height:60px;
   border-radius:50%;
   border:none;
   background:rgba(20,20,20,.65);
@@ -75,22 +79,16 @@ video{
   cursor:pointer;
 }
 
-/* ===== VERTICAL (DEFAULT) ===== */
+/* vertical = columna */
 @media (orientation: portrait){
   #controls{
-    top:50%;
-    right:16px;
-    transform:translateY(-50%);
     flex-direction:column;
   }
 }
 
-/* ===== HORIZONTAL ===== */
+/* horizontal = fila */
 @media (orientation: landscape){
   #controls{
-    bottom:16px;
-    right:50%;
-    transform:translateX(50%);
     flex-direction:row;
   }
 }
@@ -164,7 +162,7 @@ video.onplay = ()=>{
   showControls();
 };
 
-/* orientación MANUAL */
+/* orientación manual */
 rotateBtn.onclick = async ()=>{
   if(!screen.orientation?.lock) return;
   try{
@@ -189,7 +187,7 @@ closeBtn.onclick = ()=>{
   }
 };
 
-/* mostrar controles */
+/* mostrar controles al tocar */
 ['touchstart','click'].forEach(evt=>{
   document.addEventListener(evt, showControls, { passive:true });
 });
