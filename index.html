@@ -30,7 +30,7 @@ video{
   background:#000;
 }
 
-/* overlay inicial */
+/* overlay */
 #overlay{
   position:absolute;
   inset:0;
@@ -56,7 +56,7 @@ video{
   gap:18px;
   opacity:0;
   pointer-events:none;
-  transition:opacity .25s;
+  transition:opacity .25s ease;
 }
 
 #controls.show{
@@ -64,38 +64,38 @@ video{
   pointer-events:auto;
 }
 
+/* botones */
 .btn{
-  width:60px;
-  height:60px;
+  width:64px;
+  height:64px;
   border-radius:50%;
   border:none;
   background:rgba(20,20,20,.65);
   color:#fff;
-  font-size:22px;
+  font-size:24px;
   display:flex;
   align-items:center;
   justify-content:center;
-  backdrop-filter:blur(6px);
+  backdrop-filter:blur(8px);
   cursor:pointer;
+  transition:transform .15s ease;
+}
+.btn:active{
+  transform:scale(.92);
 }
 
-/* vertical = columna */
-@media (orientation: portrait){
-  #controls{
-    flex-direction:column;
-  }
+/* ===== ADAPTACIÓN POR ORIENTACIÓN ===== */
+body.portrait #controls{
+  flex-direction:column;
 }
 
-/* horizontal = fila */
-@media (orientation: landscape){
-  #controls{
-    flex-direction:row;
-  }
+body.landscape #controls{
+  flex-direction:row;
 }
 </style>
 </head>
 
-<body>
+<body class="portrait">
 <div id="container">
 
   <div id="controls">
@@ -120,7 +120,6 @@ video{
 const video = document.getElementById('player');
 const overlay = document.getElementById('overlay');
 const controls = document.getElementById('controls');
-
 const playBtn = document.getElementById('playBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const closeBtn = document.getElementById('closeBtn');
@@ -128,10 +127,23 @@ const closeBtn = document.getElementById('closeBtn');
 let hideTimer;
 let locked = false;
 
-/* cargar video */
+/* ===== ORIENTACIÓN REAL ===== */
+function updateOrientation(){
+  if(window.matchMedia('(orientation: portrait)').matches){
+    document.body.classList.add('portrait');
+    document.body.classList.remove('landscape');
+  }else{
+    document.body.classList.add('landscape');
+    document.body.classList.remove('portrait');
+  }
+}
+updateOrientation();
+window.addEventListener('orientationchange', updateOrientation);
+window.addEventListener('resize', updateOrientation);
+
+/* ===== CARGAR VIDEO ===== */
 const params = new URLSearchParams(location.search);
 let url = params.get('video');
-
 if(url){
   try{ url = decodeURIComponent(url); }catch(e){}
   video.src = url;
@@ -139,7 +151,7 @@ if(url){
   overlay.textContent = '❌ No se recibió video';
 }
 
-/* helpers */
+/* ===== CONTROLES ===== */
 function showControls(){
   controls.classList.add('show');
   clearTimeout(hideTimer);
@@ -156,13 +168,9 @@ function play(){
 }
 overlay.onclick = play;
 playBtn.onclick = play;
+video.onplay = ()=>showControls();
 
-video.onplay = ()=>{
-  overlay.classList.add('hidden');
-  showControls();
-};
-
-/* orientación manual */
+/* rotar pantalla */
 rotateBtn.onclick = async ()=>{
   if(!screen.orientation?.lock) return;
   try{
