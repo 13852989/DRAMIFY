@@ -65,15 +65,16 @@ video.rotated{
 
 /* ===== CONTROLES FLOTANTES ===== */
 #controls{
-  position:absolute;        /* ← clave */
-  inset:0;                  /* ocupa el iframe */
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) translateY(-120px); /* ⬅️ separación */
   display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:32px;
+  gap:36px;
+  z-index:10;
   opacity:0;
   pointer-events:none;
-  z-index:10;
+  transition:opacity .25s ease, transform .25s ease;
 }
 
 #controls.show{
