@@ -68,9 +68,11 @@ video.rotated{
   position:absolute;
   top:50%;
   left:50%;
-  transform:translate(-50%,-50%) translateY(-120px); /* ⬅️ separación */
+  transform:
+    translate(-50%, -50%)
+    translateY(calc(-50% - 90px)); /* ⬅️ separación REAL */
   display:flex;
-  gap:36px;
+  gap:44px;               /* ⬅️ más aire entre botones */
   z-index:10;
   opacity:0;
   pointer-events:none;
