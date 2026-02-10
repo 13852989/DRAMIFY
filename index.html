@@ -1,192 +1,191 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dramify Player</title>
+<meta charset="UTF-8" />
+<title>Dramify Player</title>
 
-  <meta http-equiv="Content-Security-Policy"
-    content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline';
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data:;
-      media-src https: blob:;
-      connect-src https:;
-    ">
+<meta http-equiv="Content-Security-Policy"
+  content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data:;
+    media-src https: blob:;
+    connect-src https:;
+  ">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  background:#000;
+  overflow:hidden;
+  font-family:system-ui,-apple-system,sans-serif;
+}
 
-    body.landscape {
-      transform: rotate(90deg);
-      transform-origin: center;
-      width: 100vh;
-      height: 100vw;
-    }
+/* landscape visual (web fallback) */
+body.landscape{
+  transform:rotate(90deg);
+  transform-origin:center;
+  width:100vh;
+  height:100vw;
+}
 
-    #container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: #000;
-    }
+#container{
+  position:relative;
+  width:100%;
+  height:100%;
+}
 
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background: #000;
-    }
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+}
 
-    /* Overlay play */
-    #overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,.45);
-      color: #fff;
-      font-size: 22px;
-      cursor: pointer;
-      z-index: 10;
-      backdrop-filter: blur(2px);
-    }
+/* overlay */
+#overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  font-size:22px;
+  z-index:10;
+  cursor:pointer;
+}
 
-    #overlay.hidden {
-      display: none;
-    }
+#overlay.hidden{display:none}
 
-    /* BOTONES MINIMAL */
-    .floating-btn {
-      position: absolute;
-      z-index: 20;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(20,20,20,.65);
-      color: #fff;
-      font-size: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      backdrop-filter: blur(6px);
-      transition: transform .15s ease, background .15s ease, opacity .3s;
-      opacity: .85;
-    }
+/* buttons */
+.btn{
+  position:absolute;
+  z-index:20;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  border:none;
+  background:rgba(20,20,20,.65);
+  color:#fff;
+  font-size:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(6px);
+  cursor:pointer;
+  opacity:0;
+  transition:opacity .3s,transform .15s;
+}
 
-    .floating-btn:active {
-      transform: scale(.94);
-    }
+.btn.show{opacity:.9}
+.btn:active{transform:scale(.94)}
 
-    .floating-btn:hover {
-      background: rgba(229,9,20,.85);
-      opacity: 1;
-    }
-
-    /* POSICIONES */
-    #rotateBtn {
-      top: 16px;
-      right: 16px;
-    }
-
-    #closeBtn {
-      top: 16px;
-      left: 16px;
-      font-size: 24px;
-    }
-
-  </style>
+#rotateBtn{top:16px;right:16px}
+#closeBtn{top:16px;left:16px;font-size:24px}
+</style>
 </head>
+
 <body>
-
 <div id="container">
-  <!-- Botón cerrar (opcional para app) -->
-  <button id="closeBtn" class="floating-btn">✕</button>
 
-  <!-- Botón rotar -->
-  <button id="rotateBtn" class="floating-btn">⤾</button>
+  <button id="closeBtn" class="btn">✕</button>
+  <button id="rotateBtn" class="btn">⤾</button>
 
-  <!-- Overlay -->
   <div id="overlay">▶︎ Tocar para reproducir</div>
 
-  <!-- Video -->
   <video
     id="player"
     controls
     playsinline
     webkit-playsinline
-    preload="metadata"
-  ></video>
+    preload="metadata">
+  </video>
+
 </div>
 
 <script>
-  const video = document.getElementById('player');
-  const overlay = document.getElementById('overlay');
-  const rotateBtn = document.getElementById('rotateBtn');
-  const closeBtn = document.getElementById('closeBtn');
+const video = document.getElementById('player');
+const overlay = document.getElementById('overlay');
+const rotateBtn = document.getElementById('rotateBtn');
+const closeBtn = document.getElementById('closeBtn');
 
-  /* ========= VIDEO DESDE QUERY ========= */
-  const params = new URLSearchParams(window.location.search);
-  let videoUrl = params.get('video');
+let landscape=false;
+let hideTimer;
 
-  if (!videoUrl) {
-    overlay.textContent = '❌ No se recibió video';
-    overlay.style.cursor = 'default';
-  } else {
-    if (videoUrl.includes('%')) {
-      try { videoUrl = decodeURIComponent(videoUrl); } catch(e){}
-    }
-    console.log('VIDEO FINAL:', videoUrl);
-    video.src = videoUrl;
+/* ========= cargar video ========= */
+const params=new URLSearchParams(location.search);
+let url=params.get('video');
+
+if(!url){
+  overlay.textContent='❌ No se recibió video';
+  overlay.style.cursor='default';
+}else{
+  if(url.includes('%')){
+    try{url=decodeURIComponent(url)}catch(e){}
   }
+  video.src=url;
+}
 
-  /* ========= PLAY MANUAL ========= */
-  overlay.addEventListener('click', () => {
-    video.play()
-      .then(() => overlay.classList.add('hidden'))
-      .catch(() => overlay.textContent = '❌ Error al reproducir');
-  });
+/* ========= helpers ========= */
+function showButtons(){
+  rotateBtn.classList.add('show');
+  closeBtn.classList.add('show');
+  clearTimeout(hideTimer);
+  hideTimer=setTimeout(()=>{
+    rotateBtn.classList.remove('show');
+    closeBtn.classList.remove('show');
+  },2000);
+}
 
-  video.addEventListener('play', () => {
-    overlay.classList.add('hidden');
-  });
+function lockOrientation(type){
+  if(window.Capacitor?.Plugins?.ScreenOrientation){
+    window.Capacitor.Plugins.ScreenOrientation.lock({orientation:type});
+  }
+}
 
-  /* ========= ROTACIÓN ========= */
-  let landscape = false;
+/* ========= play ========= */
+overlay.onclick=()=>{
+  video.play()
+    .then(()=>overlay.classList.add('hidden'))
+    .catch(()=>overlay.textContent='❌ Error al reproducir');
+};
 
-  rotateBtn.addEventListener('click', () => {
-    landscape = !landscape;
-    document.body.classList.toggle('landscape', landscape);
+video.onplay=()=>{
+  overlay.classList.add('hidden');
+  landscape=true;
+  document.body.classList.add('landscape');
+  lockOrientation('landscape');
+  showButtons();
+};
 
-    if (window.Capacitor?.Plugins?.ScreenOrientation) {
-      window.Capacitor.Plugins.ScreenOrientation.lock({
-        orientation: landscape ? 'landscape' : 'portrait'
-      });
-    }
-  });
+/* ========= rotate ========= */
+rotateBtn.onclick=()=>{
+  landscape=!landscape;
+  document.body.classList.toggle('landscape',landscape);
+  lockOrientation(landscape?'landscape':'portrait');
+  showButtons();
+};
 
-  /* ========= CERRAR (APP) ========= */
-  closeBtn.addEventListener('click', () => {
-    if (window.Capacitor?.Plugins?.App) {
-      window.Capacitor.Plugins.App.exitApp();
-    } else {
-      history.back();
-    }
-  });
+/* ========= close ========= */
+closeBtn.onclick=()=>{
+  if(window.Capacitor?.Plugins?.App){
+    window.Capacitor.Plugins.App.exitApp();
+  }else{
+    history.back();
+  }
+};
+
+/* ========= activity ========= */
+['mousemove','touchstart','click'].forEach(e=>{
+  document.addEventListener(e,showButtons,{passive:true});
+});
 </script>
-
 </body>
 </html>
